@@ -1,0 +1,14 @@
+FROM ubuntu:22.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y iputils-ping net-tools iproute2 openssh-server openssh-client curl wget sudo && \
+    mkdir -p /run/sshd && \
+    dpkg-reconfigure openssh-server && \
+    echo 'root:password' | chpasswd && \
+    sed -i 's/#*PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#*PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    rm -rf /var/lib/apt/lists/*
+
+CMD ["/usr/sbin/sshd", "-D"]

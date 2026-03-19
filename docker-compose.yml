@@ -1,0 +1,76 @@
+networks:
+  net1:
+    internal: true
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24
+  net2:
+    internal: true
+    ipam:
+      config:
+        - subnet: 192.168.10.0/24
+  net3:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.25.1.0/24
+
+services:
+  attacker:
+    build:
+      context: .
+      dockerfile: Dockerfile.attacker
+    container_name: attacker-pc
+    hostname: attacker-pc
+    privileged: true
+    networks:
+          net1:
+            ipv4_address: 10.10.0.20
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    tty: true
+    stdin_open: true
+
+  external:
+    build:
+      context: .
+      dockerfile: Dockerfile.target
+    container_name: external-host
+    hostname: external-host
+    networks:
+          net1:
+            ipv4_address: 10.10.0.2
+          net2:
+            ipv4_address: 192.168.10.2
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+  internal:
+    build:
+      context: .
+      dockerfile: Dockerfile.target
+    container_name: internal-pc
+    hostname: internal-pc
+    networks:
+          net2:
+            ipv4_address: 192.168.10.3
+          net3:
+            ipv4_address: 172.25.1.3
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+  double_pivot:
+    build:
+      context: .
+      dockerfile: Dockerfile.target
+    container_name: isolated-db
+    hostname: isolated-db
+    networks:
+          net3:
+            ipv4_address: 172.25.1.4
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW

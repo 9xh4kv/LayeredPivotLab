@@ -1,0 +1,39 @@
+FROM ubuntu:22.04 as downloader
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp
+
+RUN curl -fL https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_proxy_0.8.2_linux_amd64.tar.gz -o proxy.tar.gz && \
+    tar -xzf proxy.tar.gz && \
+    mv proxy /root/proxy && \
+    chmod +x /root/proxy && \
+    rm proxy.tar.gz
+
+RUN curl -fL https://github.com/nicocha30/ligolo-ng/releases/download/v0.8.2/ligolo-ng_agent_0.8.2_linux_amd64.tar.gz -o agent.tar.gz && \
+    tar -xzf agent.tar.gz && \
+    mv agent /root/agent && \
+    chmod +x /root/agent && \
+    rm agent.tar.gz
+
+FROM ubuntu:22.04
+
+COPY --from=downloader /root/proxy /root/proxy
+COPY --from=downloader /root/agent /root/agent
+
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y iputils-ping net-tools iproute2 openssh-server openssh-client python3 sudo wget && \
+    mkdir -p /run/sshd && \
+    dpkg-reconfigure openssh-server && \
+    echo 'root:password' | chpasswd && \
+    sed -i 's/#*PermitRootLogin .*/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#*PasswordAuthentication .*/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    rm -rf /var/lib/apt/lists/*
+
+CMD ["/usr/sbin/sshd", "-D"]
